@@ -115,7 +115,7 @@ android {
                 versionMinor * 100 +
                 versionPath
         versionName = "${versionMajor}.${versionMinor}.${versionPath}"
-        minSdkVersion 23
+        minSdkVersion 22
         targetSdkVersion 29
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         javaCompileOptions {
