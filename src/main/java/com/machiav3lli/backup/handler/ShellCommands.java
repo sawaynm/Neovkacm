@@ -39,15 +39,14 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     final static String TAG = Constants.classTag(".ShellCommands");
     private static Pattern gidPattern = Pattern.compile("Gid:\\s*\\(\\s*(\\d+)");
     private static Pattern uidPattern = Pattern.compile("Uid:\\s*\\(\\s*(\\d+)");
+
     private static String errors = "";
-    private final String oabUtils;
     CommandHandler commandHandler = new CommandHandler();
     SharedPreferences prefs;
     String toybox;
     ArrayList<String> users;
     Context context;
     boolean multiuserEnabled;
-    private boolean legacyMode;
     private String password;
 
     public ShellCommands(Context context, SharedPreferences prefs, ArrayList<String> users, File filesDir) {
@@ -69,8 +68,6 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         this.users = getUsers();
         multiuserEnabled = this.users != null && this.users.size() > 1;
 
-        this.oabUtils = new File(filesDir, AssetsHandler.OAB_UTILS).getAbsolutePath();
-        legacyMode = !checkOabUtils();
         password = prefs.getString(Constants.PREFS_PASSWORD, "");
     }
 
@@ -518,60 +515,30 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     public Ownership getOwnership(String packageDir, String shellPrivs)
             throws OwnershipException {
         List<String> result = new ArrayList<>();
-        if (!legacyMode) {
-            commandHandler.runCmd(shellPrivs, String.format("%s owner %s", oabUtils, packageDir),
-                    result::add, line -> writeErrorLog(context, "oab-utils", line),
-                    e -> Log.e(TAG, "getOwnership: " + e.toString()), this);
-            if (result.size() != 1) {
-                if (result.size() < 1) {
-                    throw new OwnershipException("got empty result from oab-utils");
-                }
-                StringBuilder sb = new StringBuilder();
-                for (String line : result) {
-                    sb.append(line).append("\n");
-                }
-                throw new OwnershipException(String.format("unexpected ownership result from oab-utils: %s",
-                        sb.toString()));
-            }
-            try {
-                JSONObject ownershipJson = new JSONObject(result.get(0));
-                return new Ownership(ownershipJson.getInt("uid"),
-                        ownershipJson.getInt("gid"));
-            } catch (JSONException e) {
-                throw new OwnershipException(String.format("error parsing ownership json: %s", e.toString()));
-            }
-        } else {
-            /*
-             * some packages can have 0 / UNKNOWN as uid and gid for a short
-             * time before being switched to their proper ids so to work
-             * around the race condition we sleep a little.
-             */
-            result.add("sleep 1");
-            result.add(String.format("%s stat %s", toybox, packageDir));
-            StringBuilder sb = new StringBuilder();
-            int ret = commandHandler.runCmd(shellPrivs, result, sb::append,
-                    line -> writeErrorLog(context, "", line),
-                    e -> Log.e(TAG, "getOwnership: " + e.toString()), this);
-            Log.i(TAG, "getOwnership return: " + ret);
-            ArrayList<String> uid_gid = getIdsFromStat(sb.toString());
-            if (uid_gid == null || uid_gid.isEmpty())
-                throw new OwnershipException("no uid or gid found while trying to set permissions");
-            return new Ownership(uid_gid.get(0), uid_gid.get(1));
-        }
+        /*
+         * some packages can have 0 / UNKNOWN as uid and gid for a short
+         * time before being switched to their proper ids so to work
+         * around the race condition we sleep a little.
+         */
+        result.add("sleep 1");
+        result.add(String.format("%s stat %s", toybox, packageDir));
+        StringBuilder sb = new StringBuilder();
+        int ret = commandHandler.runCmd(shellPrivs, result, sb::append,
+                line -> writeErrorLog(context, "", line),
+                e -> Log.e(TAG, "getOwnership: " + e.toString()), this);
+        Log.i(TAG, "getOwnership return: " + ret);
+        ArrayList<String> uid_gid = getIdsFromStat(sb.toString());
+        if (uid_gid == null || uid_gid.isEmpty())
+            throw new OwnershipException("no uid or gid found while trying to set permissions");
+        return new Ownership(uid_gid.get(0), uid_gid.get(1));
     }
 
     public int setPermissions(String packageDir) {
         try {
             Ownership ownership = getOwnership(packageDir);
             List<String> commands = new ArrayList<>();
-            // TODO using OAB-utils is not a must
-            if (!legacyMode) {
-                commands.add(String.format("%s change-owner -r %s %s", oabUtils, ownership.toString(), packageDir));
-                commands.add(String.format("%s set-permissions -r 771 %s", oabUtils, packageDir));
-            } else {
-                commands.add(String.format("%s chown -R %s %s", toybox, ownership.toString(), packageDir));
-                commands.add(String.format("%s chmod -R 771 %s", toybox, packageDir));
-            }
+            commands.add(String.format("%s chown -R %s %s", toybox, ownership.toString(), packageDir));
+            commands.add(String.format("%s chmod -R 771 %s", toybox, packageDir));
 
             // Execute
             int ret = commandHandler.runCmd("su", commands, line -> {
@@ -764,27 +731,6 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
                 line -> {
                 }, line -> writeErrorLog(context, "busybox", line),
                 e -> Log.e(TAG, "checkBusybox: ", e), this);
-        return ret == 0;
-    }
-
-    public boolean checkOabUtils() {
-        int ret = commandHandler.runCmd("su", String.format("%s -h", oabUtils),
-                line -> {
-                }, line -> writeErrorLog(context, "oab-utils", line),
-                e -> Log.e(TAG, "checkOabUtils: ", e), this);
-        Log.d(TAG, String.format("checkOabUtils returned %s", ret == 0));
-        if (ret != 0) {
-            final List<String> commands = new ArrayList<>();
-            commands.add(String.format("ls -l %s", oabUtils));
-            commands.add(String.format("file %s", oabUtils));
-            commandHandler.runCmd("su", commands, line -> {
-                Log.i(TAG, "oab-utils" + line);
-                writeErrorLog(context, "oab-utils", line);
-            }, line -> {
-                Log.e(TAG, "oab-utils" + line);
-                writeErrorLog(context, "oab-utils", line);
-            }, e -> Log.e(TAG, "checkOabUtils (ret != 0): ", e), this);
-        }
         return ret == 0;
     }
 

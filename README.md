@@ -36,8 +36,7 @@ till the version 0.9.3 there's been no structural change in how the app handles 
 ## Changes & TODOs
 
 #### [Changelog](https://github.com/machiav3lli/oandbackupx/blob/master/changelog.md)
-
-- [x] Fixing OAB-Utils build problem which was caused by a deprecated method in Rust
+- [ ] Removed oab-utils in favour of toybox
 - [x] Adapt FastAdapter: for Main, Batch and Scheduler
 - [x] Rewrite Main-, Batch- & Scheduler-(Activity, Adapter and Sorter)
 - [x] Modeling the app's structure: for the most part now
@@ -82,13 +81,11 @@ till the version 0.9.3 there's been no structural change in how the app handles 
 
 ## Building
 
-OAndBackupX is built with gradle. you need the android sdk, rust (for building the oab-utils binary), and bash (or a compatible shell for executing the oab-utils build script).
+OAndBackupX is built with gradle. You need the android sdk.
 
-P.S: If you have any problem building OAB-Utils: you can find some helping notes in its Readme.md
+## Busybox / Toybox
 
-## Busybox / OAB-Utils
-
-a working busybox installation is required at the moment, but work is in progress to include all the needed functionality in a binary included in the apk. this program is called oab-utils and is written in rust.
+A working busybox or toybox installation is required at the moment. The original oandbackup had plans to include a minimal binary with the needed functionality called oab-util. However, toybox is being shipped since Android 6 ([read on](https://lwn.net/Articles/629362/)).
 
 Busybox is available on F-Droid or you can build it yourself from [here](https://busybox.net).
 
