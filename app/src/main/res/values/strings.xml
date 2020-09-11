@@ -36,35 +36,35 @@
     <string name="showOnlyApkBackedUp">Apps with only APK backed up</string>
     <string name="showOnlyDataBackedUp">Apps with only data backed up</string>
     <string name="sortByLabel">Sort by label</string>
-    <string name="sortByPackageName">Sort by packagename</string>
+    <string name="sortByPackageName">Sort by package name</string>
     <string name="sort">Sort and filter</string>
     <string name="uninstallDialogMessage">Uninstall this app?</string>
     <string name="deleteBackupDialogMessage">Delete backup files?</string>
-    <string name="restoreDataWithoutApkError">Cannot restore data without restoring APK, package is not installed</string>
+    <string name="restoreDataWithoutApkError">Cannot restore data without restoring APK. The package was not installed.</string>
     <string name="collectingData">Collecting package info…</string>
-    <string name="utilboxCheck" translatable="false">Checking for busybox/toybox…</string>
+    <string name="utilboxCheck" translatable="false">Checking for BusyBox/Toybox…</string>
     <string name="noSu">Couldn\'t get superuser permissions</string>
-    <string name="busyboxProblem">Couldn\'t find busybox. please check error log</string>
+    <string name="busyboxProblem">Could not find BusyBox. Please check the error log.</string>
     <!-- mkfileError: an error occured while creating a file. format: string + " " + filename -->
     <string name="mkfileError">Couldn\'t create</string>
     <!-- fallbackToDefault: indicates a fallback to the default for creation of a specific file. used in the same way as mkfileError -->
     <string name="fallbackToDefault">Fall back to default</string>
-    <string name="backupFolderError">Please set the correct path in preferences and ensure it exists or is createable</string>
-    <string name="shellReturnSuccess">Success</string>
+    <string name="backupFolderError">Please a path in the preferences that either exists or can be created</string>
+    <string name="shellReturnSuccess">Done</string>
     <string name="shellReturnError">Error</string>
     <string name="backupProgress">Backing up…</string>
-    <string name="backupSuccess">Backup complete</string>
-    <string name="backupFailure">Error on backup</string>
+    <string name="backupSuccess">Completed</string>
+    <string name="backupFailure">Could not back up an app</string>
     <string name="restoreProgress">Restoring…</string>
-    <string name="restoreSuccess">Restore complete</string>
-    <string name="restoreFailure">Error on restore</string>
-    <string name="batchSuccess">Operation complete</string>
-    <string name="batchFailure">Complete with errors</string>
-    <string name="uninstallSuccess">Uninstall complete</string>
-    <string name="uninstallFailure">Error on uninstall</string>
-    <string name="errorDialogTitle">Errors occurred</string>
+    <string name="restoreSuccess">Restored</string>
+    <string name="restoreFailure">Could not restore an app</string>
+    <string name="batchSuccess">Done</string>
+    <string name="batchFailure">Finised with errors</string>
+    <string name="uninstallSuccess">Uninstalled</string>
+    <string name="uninstallFailure">Could not uninstall an app</string>
+    <string name="errorDialogTitle">Error</string>
     <string name="customListTitle">Custom list</string>
-    <string name="notInstalledModeDataWarning">App cannot be restored from a backup without APK</string>
+    <string name="notInstalledModeDataWarning">The app cannot be restored from a backup without its APK</string>
     <string name="shareTitle">Share</string>
 
     <string name="tools_title">Tools</string>
@@ -74,64 +74,64 @@
     <string name="batchDeleteBackupsDeleted">Backups deleted:</string>
     <string name="batchDeleteNothingToDelete">No backups to delete</string>
 
-    <string name="enablePackage">Enable</string>
+    <string name="enablePackage">Turn on</string>
     <!-- enablePackageTitle: title for a list of checkable users -->
-    <string name="enablePackageTitle">Enable for users</string>
-    <string name="disablePackage">Disable</string>
-    <string name="disablePackageTitle">Disable for users</string>
+    <string name="enablePackageTitle">Turn on for users</string>
+    <string name="disablePackage">Turn off</string>
+    <string name="disablePackageTitle">Turn off for users</string>
 
     <string name="prefs_title">Preferences</string>
     <string name="prefs_user">User preferences</string>
     <string name="prefs_theme">Theme</string>
     <string name="prefs_theme_light">Light</string>
     <string name="prefs_theme_dark">Dark</string>
-    <string name="prefs_theme_system">System\'s theme</string>
+    <string name="prefs_theme_system">Theme</string>
     <string name="prefs_languages">Language</string>
     <string name="prefs_language_system">System default</string>
     <string name="prefs_pathbackupfolder">Backup folder</string>
     <string name="prefs_biometriclock">Biometric lock</string>
-    <string name="prefs_biometriclock_summary">Secure the app with the device\'s biometric lock (e.g. Fingerprint, Face Unlock)</string>
+    <string name="prefs_biometriclock_summary">Secure the app with for example a fingerprint, face unlock.</string>
     <string name="prefs_rememberfiltering">Remember sort and filter</string>
-    <string name="prefs_rememberfiltering_summary">Saves the chosen sorting and filtering method. Only those marked by a checkbox in the menu are considered.</string>
+    <string name="prefs_rememberfiltering_summary">Saves the chosen sorting and filtering method chosen in the menu.</string>
     <string name="prefs_oldbackups">Filter backups by age</string>
-    <string name="prefs_oldbackups_summary">Filter backups older than value in days. used with the filter \'show old backups\'</string>
+    <string name="prefs_oldbackups_summary">Filter backups older than this amount of days. Used with the filter \"Show old backups\"</string>
     <string name="prefs_service">Service preferences</string>
     <string name="prefs_encryption">Encryption</string>
-    <string name="prefs_encryption_summary">Enable to encrypt data backups</string>
+    <string name="prefs_encryption_summary">Encrypts data backups</string>
     <string name="prefs_password">Encryption password</string>
-    <string name="prefs_password_summary">Set to empty to disable encryption</string>
-    <string name="prefs_passwordconfirmation">Encryption password confirmation</string>
+    <string name="prefs_password_summary">Leave empty to turn off encryption</string>
+    <string name="prefs_passwordconfirmation">Password encrypted</string>
     <string name="prefs_password_match_true">The passwords match</string>
-    <string name="prefs_password_match_false">The passwords doesn\'t match</string>
-    <string name="prefs_excludecache">Exclude app\'s cache</string>
-    <string name="prefs_excludecache_summary">Exclude application\'s cache from data backup</string>
-    <string name="prefs_externaldata">Backup external data</string>
-    <string name="prefs_externaldata_summary">Backs up and restores data that is placed on the external storage (e.g. /storage/emulated/0/Android/data/)</string>
-    <string name="prefs_deviceprotecteddata">Backup device protected data</string>
-    <string name="prefs_deviceprotecteddata_summary">Backs up and restores data that is placed in data/user_de</string>
+    <string name="prefs_password_match_false">The passwords don\'t match</string>
+    <string name="prefs_excludecache">Exclude the app\'s cache</string>
+    <string name="prefs_excludecache_summary">Exclude the app\'s cache from the data backup</string>
+    <string name="prefs_externaldata">Back up external data</string>
+    <string name="prefs_externaldata_summary">Backs up and restores data placed on the external storage (e.g. /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_deviceprotecteddata">Back up device protected data</string>
+    <string name="prefs_deviceprotecteddata_summary">Backs up and restores data placed in data/user_de</string>
     <string name="prefs_copyselfapk">Copy own APK</string>
     <string name="prefs_copyselfapk_summary">Place a copy of OAndBackupX in the top level of the backup folder when backed up</string>
     <string name="prefs_acquirewakelock">Prevent sleep</string>
-    <string name="prefs_acquirewakelock_summary">Acquire a wakelock while batch operations are running to prevent sleep. will speed up backups and restores considerably but will consume more energy</string>
-    <string name="prefs_enableSpecialBackups">Enable special backups</string>
+    <string name="prefs_acquirewakelock_summary">Acquire a wakelock while batch operations are running to prevent sleep and speed up backups and restoring considerably by using more energy</string>
+    <string name="prefs_enableSpecialBackups">Turn on special backups</string>
     <string name="prefs_quickreboot">Quick reboot</string>
-    <string name="prefs_quickreboot_summary">Kills the system_server process to force a restart of user space</string>
+    <string name="prefs_quickreboot_summary">Kills the system_server process to force a restart of the app</string>
     <string name="prefs_batchdelete">Delete backups</string>
-    <string name="prefs_batchdelete_summary">Delete backups of all apps not currently installed</string>
-    <string name="prefs_logviewer">View the log</string>
+    <string name="prefs_batchdelete_summary">Install the ability to delete all app backups first</string>
+    <string name="prefs_logviewer">View log</string>
     <string name="prefs_help">Help</string>
 
     <string name="sched_title">Scheduling</string>
     <string name="sched_add">Add Schedule</string>
     <string name="sched_notificationMessage">Scheduled backup</string>
     <string name="sched_interval">Interval in days:</string>
-    <string name="sched_hourOfDay">Hour of day:</string>
-    <string name="sched_checkbox">Enable</string>
+    <string name="sched_hourOfDay">Hour of the day:</string>
+    <string name="sched_checkbox">Turn on</string>
     <string name="sched_activateButton">Start backup now</string>
     <string name="sched_startingbackup">Starting scheduled backup…</string>
     <string name="sched_mode">Backup mode:</string>
     <string name="sched_submode">Backup sub-mode:</string>
-    <string name="sched_timeLeft">Time until next backup:</string>
+    <string name="sched_timeLeft">Time till next backup:</string>
     <string name="sched_customListUpdateButton">Update custom list</string>
     <string name="sched_excludeSystemCheckBox">Exclude system apps</string>
     <string name="sched_blacklist">Blacklist</string>
@@ -141,21 +141,21 @@
     <string name="spec_bluetooth">Bluetooth</string>
     <string name="spec_data">Data Usage and Policy</string>
     <string name="spec_wallpaper">Wallpaper</string>
-    <string name="spec_wifiAccessPoints">Wifi Access Points</string>
+    <string name="spec_wifiAccessPoints">Wi-Fi Access Points</string>
 
-    <string name="error_creating_notification_channel">Unable to create notification channel</string>
-    <string name="error_updating_schedule_mode">Error updating %1$s of schedule %2$d</string>
-    <string name="permission_not_granted">Permission to access external storage is required</string>
-    <string name="restart_dialog">Application seems to need to be restarted</string>
+    <string name="error_creating_notification_channel">Could not create notification channel</string>
+    <string name="error_updating_schedule_mode">Could not update %1$s of the %2$d schedule</string>
+    <string name="permission_not_granted">Grant permission to access external storage first</string>
+    <string name="restart_dialog">The app needs to be restarted</string>
 
-    <string name="dialogOK">Ok</string>
+    <string name="dialogOK">OK</string>
     <string name="dialogCancel">Cancel</string>
     <string name="dialogYes">Yes</string>
     <string name="dialogNo">No</string>
     <string name="dialogSave">Save</string>
-    <string name="dialog_refuse">Won\'t do it</string>
-    <string name="dialog_approve">Let\'s do it</string>
-    <string name="dialog_start">Let\'s go</string>
+    <string name="dialog_refuse">Sounds like a bad idea</string>
+    <string name="dialog_approve">Yes</string>
+    <string name="dialog_start">Start</string>
     <string name="dialog_unlock">Unlock</string>
 
     <string name="filter_options">Filters:</string>
@@ -163,7 +163,7 @@
     <string name="sortLabel">Label</string>
     <string name="sortPackageName">Package Name</string>
     <string name="sortDataSize">Data size</string>
-    <string name="app_s_icon">App\'s icon</string>
+    <string name="app_s_icon">App icon</string>
     <string name="bothBackedUp">APK and data</string>
     <string name="all">All</string>
     <string name="apptype_system">System app</string>
@@ -175,19 +175,19 @@
     <string name="version_name_title">Version name:</string>
     <string name="backup_mode_title">Backup mode:</string>
     <string name="last_backup_title">Last backup:</string>
-    <string name="app_s_type_title">App\'s type:</string>
+    <string name="app_s_type_title">App type:</string>
     <string name="encrypted_data_title">Encrypted data:</string>
     <string name="other_filters_options">Special filters:</string>
-    <string name="deleted_backup">Deleted the backup</string>
-    <string name="empty_filtered_list">The filtered List is empty, therefore setting the filters back to default</string>
+    <string name="deleted_backup">Backup deleted</string>
+    <string name="empty_filtered_list">Resetting the filters because the filtered list is empty.</string>
     <string name="ignore_battery_optimization_title">Battery Optimization</string>
-    <string name="ignore_battery_optimization_message">Backups could stop sometimes. To prevent this, you should turn off the battery optimization</string>
-    <string name="ignore_battery_optimization_not_supported">This device doesn\'t support ignoring battery optimizations unfortunately!</string>
-    <string name="failed_unzipping">Error while unzipping the data, check the encryption password!</string>
+    <string name="ignore_battery_optimization_message">To prevent backups stopping, turn off the battery optimization</string>
+    <string name="ignore_battery_optimization_not_supported">This device doesn\'t support ignoring battery optimizations.</string>
+    <string name="failed_unzipping">Could not uncompress the data. Check the encryption password.</string>
     <string name="split_apks">Split APKs:</string>
     <string name="backup_filters">Backup Filters:</string>
     <string name="grant_usage_access_title">Grant Usage Access</string>
-    <string name="grant_usage_access_message">This is essential to get the information about sizes of app\'s files</string>
+    <string name="grant_usage_access_message">This is essential to fetch info about app file sizes</string>
     <string name="app_size">App Size:</string>
     <string name="data_size">Data Size:</string>
     <string name="cache_size">Cache Size:</string>
@@ -195,7 +195,7 @@
     <string name="help_license">License</string>
     <string name="help_group">Our Group</string>
     <string name="enable_encryption_title">Data Encryption</string>
-    <string name="enable_encryption_message">It\'s not safe to keep your data on your device not encrypted. For the safety of your data enable encryption and set a password.</string>
+    <string name="enable_encryption_message">Turn on encryption and set a password to ensure the safety of the data on your device.</string>
     <string name="sort_and_filter"><![CDATA[Sort & Filter]]></string>
     <string name="quickRebootMessage">Do you wish to restart userspace?</string>
     <string name="tag_user" translatable="false">USR</string>
@@ -206,17 +206,17 @@
     <string name="tag_apk_and_data" translatable="false"><![CDATA[A&D]]></string>
     <string name="tag_update" translatable="false">UPD</string>
     <string name="storage_access">Storage Access</string>
-    <string name="welcome_to_oabx">Welcome to OABX!</string>
-    <string name="intro_welcome_message"> OAndBackupX is a fork of the infamous OAndBackup with the aim to bring it to 2020 and further. For now most of the functionality and UI of the app are rewritten and some are added.
-        \n The app is still in beta stages and a lot of rebasing is done often. So please read the changelog carefully with each new release.
-        \n All types of contribution are welcome was it translation, ideas, reporting bugs or code work.
+    <string name="welcome_to_oabx">Welcome to OABX.</string>
+    <string name="intro_welcome_message"> OAndBackupX is a fork of OAndBackup aiming to bring it up-to-date and onwards. Most of the functionality and UI has been rewritten, and a few things added.
+        \n In this beta stage a lot of changes happen. Please keep an eye on the changelog for each new release.
+        \n All types of contributions are welcome, for example translations, ideas, reporting bugs or writing code.
         \n
-        \n Now on functionality of our App:
-        \n • It requires root and allows you to backup individual apps and their data.
-        \n • Both backup and restore of individual programs one at a time and batch backup and restore of multiple programs are supported.
-        \n • Restoring system apps should be possible without requiring a reboot afterwards, but still we don\'t advise to do it.
-        \n • Backups can be scheduled with no limit on the number of individual schedules and there is the possibility of creating unique custom lists.</string>
-    <string name="intro_permission_storage">The app uses read/write permission of storage to be able to access the external storage, set a custom backup folder and provide the possibility for the backup of external data/obb of other apps.</string>
-    <string name="intro_permission_usageaccess">The app needs this permission to be able to check the stats and sizes of data and cache of your apps.</string>
-    <string name="intro_permission_batteryoptimization">The app can face some problems doing scheduled backups on some ROMs that adopt an aggressive battery optimizations e.g. MIUI, but even on vanilla AOSP such a problem can happen.</string>
+        \n App functionality:
+        \n • Root access is required, and allows you to back up individual apps and their data.
+        \n • Both backup and restoration of individual apps, batch backup and restoring multiple programs is supported.
+        \n • Restoring system apps should be possible without reboot the device, but it is not advised.
+        \n • Backups can be scheduled with any amount of individual schedules and you can create unique custom lists.</string>
+    <string name="intro_permission_storage">The app uses the read/write permission of storage to access the external storage, set a custom backup folder and allowing backing up external data/obb of other apps.</string>
+    <string name="intro_permission_usageaccess">The app needs this permission to check the stats and sizes of your app data and cache.</string>
+    <string name="intro_permission_batteryoptimization">Scheduled backups can be problematic on ROMs that adopt an aggressive battery optimizations. Especially custom ones like MIUI.</string>
 </resources>
