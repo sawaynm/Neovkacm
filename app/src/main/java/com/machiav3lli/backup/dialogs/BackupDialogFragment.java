@@ -58,7 +58,7 @@ public class BackupDialogFragment extends DialogFragment {
         if (showApkBtn) {
             builder.setNegativeButton(R.string.handleApk, (dialog, id) -> listener.onActionCalled(app, actionType, AppInfo.MODE_APK));
         }
-        boolean showDataBtn = app.getDataSize() != 0;
+        boolean showDataBtn = app.getDataSize() != 0 || app.isSpecial();
         if (showDataBtn) {
             builder.setNeutralButton(R.string.handleData, (dialog, id) -> listener.onActionCalled(app, actionType, AppInfo.MODE_DATA));
         }
