@@ -139,10 +139,10 @@ public final class ItemUtils {
         switch (backupMode) {
             case BaseAppAction.MODE_APK:
                 apk.setVisibility(View.VISIBLE);
-                data.setVisibility(View.GONE);
+                data.setVisibility(View.INVISIBLE);
                 break;
             case BaseAppAction.MODE_DATA:
-                apk.setVisibility(View.GONE);
+                apk.setVisibility(View.INVISIBLE);
                 data.setVisibility(View.VISIBLE);
                 break;
             case BaseAppAction.MODE_BOTH:
@@ -150,8 +150,8 @@ public final class ItemUtils {
                 data.setVisibility(View.VISIBLE);
                 break;
             default:
-                apk.setVisibility(View.GONE);
-                data.setVisibility(View.GONE);
+                apk.setVisibility(View.INVISIBLE);
+                data.setVisibility(View.INVISIBLE);
                 break;
         }
         // TODO: hg42: if data or apk do not exist, handle it as already backuped and choose another (darker?) color
