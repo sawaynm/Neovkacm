@@ -19,10 +19,13 @@ package com.machiav3lli.backup.handler.action;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.util.Log;
 
 import com.machiav3lli.backup.Constants;
 import com.machiav3lli.backup.handler.ShellHandler;
+import com.machiav3lli.backup.utils.PrefUtils;
 import com.topjohnwu.superuser.Shell;
 
 import java.util.Arrays;
@@ -41,6 +44,10 @@ public abstract class BaseAppAction {
     private static final String TAG = Constants.classTag(".BaseAppAction");
     private final ShellHandler shell;
     private final Context context;
+    private int preprocessed;
+    private static final int PREP_SUSPEND = 1;
+    private static final int PREP_SIGTERM = 2;
+    private static final int PREP_SIGSTOP = 4;
 
     protected BaseAppAction(Context context, ShellHandler shell) {
         this.context = context;
@@ -83,11 +90,67 @@ public abstract class BaseAppAction {
     }
 
     @SuppressLint("DefaultLocale")
-    public void killPackage(String packageName) {
+    public void preprocessPackage(String packageName) {
         try {
-            ShellHandler.runAsRoot(String.format("am force-stop --user all %s", packageName));
+            ApplicationInfo applicationInfo = this.context.getPackageManager().getApplicationInfo(packageName, 0);
+            Log.i(BaseAppAction.TAG, String.format("package %s uid %d", packageName, applicationInfo.uid));
+            this.preprocessed = 0;
+            /**/
+            if (applicationInfo.uid == 1000) {  //TODO: hg42: may not be sufficient / there are more system users
+                Log.w(BaseAppAction.TAG, "Requested to kill processes of UID 1000. Refusing to kill system's processes!");
+                return;
+            }
+            /**/
+            if (PrefUtils.isKillBeforeActionEnabled(this.getContext())) {
+                ShellHandler.runAsRoot(String.format("am force-stop --user all %s", packageName));
+                //ShellHandler.runAsRoot(String.format("am kill --user all %s", packageName));
+                return;
+            }
+            if (false) {
+                this.preprocessed |= PREP_SUSPEND; //TODO: hg42: we may add setting
+                //ShellHandler.runAsRoot(String.format("pm suspend --user %d %s", applicationInfo.uid, packageName)); // looks like it does not work, wrong permissions
+                ShellHandler.runAsRoot(String.format("pm suspend %s", packageName)); // disables the app for the user, but it still runs (e.g. termux commands continue but it's ui is closed)
+            }
+            if (false) {
+                this.preprocessed |= PREP_SIGTERM; //TODO: hg42: we may add setting
+                ShellHandler.runAsRoot(String.format("ps -o PID -u %d | grep -v PID | xargs kill -TERM", applicationInfo.uid)); // certainly too low level and too hard (is it mapped by Android to app lifecycle in any way?)
+            }
+            if (false) {
+                this.preprocessed |= PREP_SIGSTOP; //TODO: hg42: we may add setting
+                ShellHandler.runAsRoot(String.format("ps -o PID -u %d | grep -v PID | xargs kill -STOP", applicationInfo.uid)); // pause corresponding processes (but files may still be in the middle and buffers contain unwritten data)
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.w(BaseAppAction.TAG, packageName + " does not exist. Cannot preprocess!");
+        } catch (ShellHandler.ShellCommandFailedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressLint("DefaultLocale")
+    public void postprocessPackage(String packageName) {
+        try {
+            if (this.preprocessed == 0) {
+                return;
+            }
+            ApplicationInfo applicationInfo = this.context.getPackageManager().getApplicationInfo(packageName, 0);
+            // enable those that correspond to those in preprocessPackage
+            if ((preprocessed &= PREP_SUSPEND) != 0) {
+              //ShellHandler.runAsRoot(String.format("pm unsuspend --user %d %s", applicationInfo.uid, packageName));
+              ShellHandler.runAsRoot(String.format("pm unsuspend %s", packageName)); // better done directly after suspend (before backup), when STOP is also used
+            }
+            if ((preprocessed &= PREP_SIGSTOP) != 0) {
+              ShellHandler.runAsRoot(String.format("ps -o PID -u %d | grep -v PID | xargs kill -CONT", applicationInfo.uid)); // continue everything that was stopped
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.w(BaseAppAction.TAG, packageName + " does not exist. Cannot preprocess!");
         } catch (ShellHandler.ShellCommandFailedException e) {
             Log.w(BaseAppAction.TAG, "Could not kill package " + packageName + ": " + String.join(" ", e.getShellResult().getErr()));
         }
     }
 }
+
+
+//TODO: hg42: known failure cases for "am force-stop":
+//  alarm
+//  calendar (notification)
+//  additional keyboard (Multiling O Keyboard) must be selected as default after restart
