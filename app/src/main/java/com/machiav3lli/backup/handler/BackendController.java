@@ -31,8 +31,10 @@ public final class BackendController {
     List of packages ignored for any reason
      */
     private static final List<String> ignoredPackages = Arrays.asList(
+            BuildConfig.APPLICATION_ID, // ignore own package, it would send a SIGTERM to itself on backup/restore
             "android", // virtual package. Data directory is /data -> not a good idea to backup
-            BuildConfig.APPLICATION_ID // ignore own package, it would send a SIGTERM to itself on backup/restore
+            "com.google.android.gms",
+            "com.android.externalstorage"
     );
 
     private BackendController() {
@@ -116,5 +118,4 @@ public final class BackendController {
             return null;
         }
     }
-
 }
