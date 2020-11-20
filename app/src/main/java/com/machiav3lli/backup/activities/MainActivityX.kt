@@ -18,6 +18,7 @@
 package com.machiav3lli.backup.activities
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
@@ -68,6 +69,8 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
 
     companion object {
         private val TAG = classTag(".MainActivityX")
+        private var theApp : Application? = null
+
         var shellHandlerInstance: ShellHandler? = null
             private set
 
@@ -84,6 +87,9 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
             Shell.setDefaultBuilder(Shell.Builder.create()
                     .setTimeout(20))
         }
+
+        val app get() = theApp
+        val context get() = theApp?.applicationContext
     }
 
     // TODO DataModel to lay the ground for more abstraction
@@ -111,6 +117,7 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        theApp = this.application
         binding = ActivityMainXBinding.inflate(layoutInflater)
         setContentView(binding.root)
         powerManager = getSystemService(POWER_SERVICE) as PowerManager
