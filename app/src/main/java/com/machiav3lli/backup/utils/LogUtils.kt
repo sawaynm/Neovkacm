@@ -18,31 +18,43 @@
 package com.machiav3lli.backup.utils
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import android.util.Log
+import android.util.LogPrinter
+import androidx.test.internal.runner.listener.LogRunListener
+import androidx.test.internal.util.LogUtil
 import com.machiav3lli.backup.Constants.classTag
+import com.machiav3lli.backup.activities.MainActivityX
+import com.machiav3lli.backup.handler.ShellCommands
+import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.items.StorageFile
 import com.machiav3lli.backup.utils.FileUtils.BackupLocationIsAccessibleException
 import com.machiav3lli.backup.utils.PrefUtils.StorageLocationNotConfiguredException
+import kotlinx.coroutines.GlobalScope
 import java.io.IOException
 
-// TODO Improve Log: seperation into reports(items)
-class LogUtils(context: Context) {
-    private var logFile: Uri
-    var context = context
+// TODO Improve Log: separation into reports(items)
+class LogUtils(var context: Context) {
+    private var logFile: Uri? = null
+    var logcat : Thread? = null
 
     init {
-        val backupRootFolder = StorageFile.fromUri(context, FileUtils.getBackupDir(context))
-        var logDocumentFile = backupRootFolder.findFile(FileUtils.LOG_FILE_NAME)
+        val folder = StorageFile.fromUri(context, FileUtils.getBackupDir(context))
+        var logDocumentFile = folder.findFile(FileUtils.LOG_FILE_NAME)
         if (logDocumentFile == null || !logDocumentFile.exists()) {
-            logDocumentFile = backupRootFolder.createFile("application/octet-stream", FileUtils.LOG_FILE_NAME)
+            logDocumentFile = folder.createFile("application/octet-stream", FileUtils.LOG_FILE_NAME)
         }
-        logFile = logDocumentFile!!.uri
+        logFile = logDocumentFile?.uri
     }
 
     @Throws(IOException::class)
     fun writeToLogFile(log: String?) {
-        FileUtils.openFileForWriting(context, logFile, "wa").use { logWriter -> logWriter.write(log) }
+        logFile?.let { logFile ->
+            FileUtils.openFileForWriting(context, logFile, "wa").use { logWriter -> logWriter.write(log) }
+        }
+        Log.e("ERRORS", log?:"")
     }
 
     @Throws(IOException::class)
@@ -83,8 +95,8 @@ class LogUtils(context: Context) {
                 else
                     whatStr = " (" + whatStr + ")"
             }
-            Log.e("unhandledException", e.toString() + whatStr + "\n" + e.stackTrace.toString())
-            e.printStackTrace()
+            var message = "unhandledException: " + e.toString() + whatStr + "\n" + e.stackTrace.toString()
+            Log.e(TAG, message)
         }
     }
 }

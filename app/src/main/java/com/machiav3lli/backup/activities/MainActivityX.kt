@@ -50,6 +50,7 @@ import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.SortFilterManager.applyFilter
 import com.machiav3lli.backup.handler.SortFilterManager.getFilterPreferences
 import com.machiav3lli.backup.items.*
+import com.machiav3lli.backup.utils.FileUtils
 import com.machiav3lli.backup.utils.FileUtils.BackupLocationIsAccessibleException
 import com.machiav3lli.backup.utils.LogUtils
 import com.machiav3lli.backup.utils.LogUtils.Companion.logErrors
@@ -64,6 +65,8 @@ import com.mikepenz.fastadapter.adapters.ItemAdapter
 import com.mikepenz.fastadapter.diff.FastAdapterDiffUtil
 import com.mikepenz.fastadapter.listeners.ClickEventHook
 import com.topjohnwu.superuser.Shell
+import java.io.File
+import java.lang.Process as Process1
 
 class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
 
@@ -90,6 +93,9 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
 
         val app get() = theApp
         val context get() = theApp?.applicationContext
+        var logPath : String? = null
+        var logcat : java.lang.Process? = null
+        var pid : Int? = null
     }
 
     // TODO DataModel to lay the ground for more abstraction
@@ -118,6 +124,19 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         theApp = this.application
+        try {
+            logPath = "${MainActivityX.context?.externalCacheDir?:MainActivityX.context?.cacheDir!!}/${FileUtils.LOG_FILE_NAME}"
+            pid = android.os.Process.myPid()
+            try {
+                logcat = Runtime.getRuntime().exec("logcat --pid=$pid -f $logPath")
+            } catch (e: Throwable) {
+                LogUtils.unhandledException(e)
+            }
+            Log.i(TAG, "".padEnd(60, '-') + " create")
+
+        } catch (e: Throwable) {
+            LogUtils.unhandledException(e)
+        }
         binding = ActivityMainXBinding.inflate(layoutInflater)
         setContentView(binding.root)
         powerManager = getSystemService(POWER_SERVICE) as PowerManager
@@ -127,6 +146,11 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
         setupNavigation()
         setupOnClicks()
         runOnUiThread { showEncryptionDialog() }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        logcat?.destroy()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
@@ -145,6 +169,7 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
     }
 
     override fun onBackPressed() {
+        Log.i(TAG, "".padEnd(60, '-') + " finish")
         finishAffinity()
     }
 
@@ -474,25 +499,28 @@ class MainActivityX : BaseActivity(), BatchConfirmDialog.ConfirmListener {
     }
 
     fun refreshStorage() {
+        Log.i(TAG, "refreshStorage")
         StorageFile.invalidateCache()
         refresh(mainBoolean, (!mainBoolean && backupBoolean) || (mainBoolean && sheetApp != null), true)
     }
 
     fun refreshView() {
+        Log.i(TAG, "refreshView")
         refresh(mainBoolean, (!mainBoolean && backupBoolean) || (mainBoolean && sheetApp != null), false)
     }
 
     fun refreshWithAppSheet() {
+        Log.i(TAG, "refreshWithAppSheet")
         StorageFile.invalidateCache()
         refresh(true, sheetApp != null, true)
     }
 
     fun batchRefresh() {
+        Log.i(TAG, "batchRefresh")
         refresh(false, backupBoolean, false)
     }
 
     fun refresh(mainBoolean: Boolean, backupOrAppSheetBoolean: Boolean, cleanBoolean: Boolean) {
-        Log.d(TAG, "refreshing")
         runOnUiThread {
             binding.refreshLayout.isRefreshing = true
             searchViewController!!.clean()
