@@ -49,6 +49,7 @@ class SortFilterModel(private var code: CharSequence = "0000") {
     val specialFilterId: Int
         get() = when (code[3]) {
             MAIN_SPECIALFILTER_NEW_UPDATED -> R.id.specialNewAndUpdated
+            MAIN_SPECIALFILTER_INSTALLED -> R.id.specialInstalled
             MAIN_SPECIALFILTER_NOTINSTALLED -> R.id.specialNotInstalled
             MAIN_SPECIALFILTER_OLD -> R.id.specialOld
             MAIN_SPECIALFILTER_SPLIT -> R.id.specialSplit
@@ -89,6 +90,7 @@ class SortFilterModel(private var code: CharSequence = "0000") {
     fun putSpecialFilter(id: Int) {
         val specialFilter: Char = when (id) {
             R.id.specialNewAndUpdated -> MAIN_SPECIALFILTER_NEW_UPDATED
+            R.id.specialOnlyInstalled -> MAIN_SPECIALFILTER_ONLYINSTALLED
             R.id.specialNotInstalled -> MAIN_SPECIALFILTER_NOTINSTALLED
             R.id.specialOld -> MAIN_SPECIALFILTER_OLD
             R.id.specialSplit -> MAIN_SPECIALFILTER_SPLIT

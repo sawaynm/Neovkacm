@@ -344,6 +344,13 @@
                         android:text="@string/showNewAndUpdated" />
 
                     <com.google.android.material.chip.Chip
+                        android:id="@+id/specialInstalled"
+                        style="@style/Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/showInstalled" />
+
+                    <com.google.android.material.chip.Chip
                         android:id="@+id/specialNotInstalled"
                         style="@style/Chip.Filter"
                         android:layout_width="wrap_content"

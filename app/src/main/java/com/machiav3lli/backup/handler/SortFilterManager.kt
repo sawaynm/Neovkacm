@@ -72,6 +72,7 @@ object SortFilterManager {
                 ?: 7
         predicate = when (filter[3]) {
             MAIN_SPECIALFILTER_NEW_UPDATED -> { appInfo: AppInfo -> !appInfo.hasBackups || appInfo.isUpdated }
+            MAIN_SPECIALFILTER_INSTALLED -> { appInfo: AppInfo -> appInfo.isInstalled }
             MAIN_SPECIALFILTER_NOTINSTALLED -> { appInfo: AppInfo -> !appInfo.isInstalled }
             MAIN_SPECIALFILTER_OLD -> {
                 { appInfo: AppInfo ->
