@@ -1,41 +1,27 @@
 command=$1
 shift
-
 utilbox=$1
 shift
-
 suspend=false
-
 while [[ $1 == --* ]]; do
-
   if [[ $1 == --suspend ]]; then
     shift
     suspend=true
     continue
   fi
-
   break
-
 done
-
-
 if [[ $command == "pre" ]]; then
-
   package=$1
   shift
-
   userid=$1
   shift
-
-
   #am force-stop $package
   #am kill $package
-
   if $suspend; then
     pm suspend $package >/dev/null
     $utilbox sleep 3
   fi
-
   pids=$(
     (
       $utilbox ps -o PID -u $userid | $utilbox tail -n +2
@@ -46,9 +32,7 @@ if [[ $command == "pre" ]]; then
     ) |
     $utilbox sort -u -n
   )
-
   #echo "pids=( $pids )"
-
   if [[ -n $pids ]]; then
     $utilbox ps -A -w -o USER,PID,NAME -p $pids |
       while read -r user pid process; do
@@ -58,25 +42,17 @@ if [[ $command == "pre" ]]; then
         $utilbox kill -STOP $pid && echo $pid
       done
   fi
-
   exit
 fi
-
 if [[ $command == "post" ]]; then
-
   package=$1
   shift
-
   userid=$1
   shift
-
   am kill $package
-
   if [[ -n $* ]]; then $utilbox kill -CONT "$@"; fi
-
   if $suspend; then
     pm unsuspend $package
   fi
-
   exit
 fi
