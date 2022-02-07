@@ -20,8 +20,9 @@ package com.machiav3lli.backup.activities
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.*
-import android.content.res.AssetManager
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Looper
 import android.os.PersistableBundle
@@ -34,14 +35,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
-import androidx.preference.PreferenceManager
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import com.machiav3lli.backup.BuildConfig
-import com.machiav3lli.backup.PREFS_SKIPPEDENCRYPTION
-import com.machiav3lli.backup.R
-import com.machiav3lli.backup.actions.BaseAppAction
-import com.machiav3lli.backup.classAddress
+import com.machiav3lli.backup.*
 import com.machiav3lli.backup.databinding.ActivityMainXBinding
 import com.machiav3lli.backup.dbs.AppExtras
 import com.machiav3lli.backup.dbs.AppExtrasDatabase
@@ -49,41 +45,21 @@ import com.machiav3lli.backup.dbs.BlocklistDatabase
 import com.machiav3lli.backup.fragments.ProgressViewController
 import com.machiav3lli.backup.fragments.RefreshViewController
 import com.machiav3lli.backup.handler.LogsHandler
-import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
 import com.machiav3lli.backup.items.SortFilterModel
 import com.machiav3lli.backup.items.StorageFile
+import com.machiav3lli.backup.services.WorkReceiver
 import com.machiav3lli.backup.tasks.AppActionWork
 import com.machiav3lli.backup.utils.*
 import com.machiav3lli.backup.viewmodels.MainViewModel
 import com.machiav3lli.backup.viewmodels.MainViewModelFactory
 import com.topjohnwu.superuser.Shell
-import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
 import java.lang.ref.WeakReference
 
 
 class MainActivityX : BaseActivity() {
 
     companion object {
-        val VERSION_FILE = "__version__"
-        val ASSETS_SUBDIR = "assets"
-
-        var shellHandlerInstance: ShellHandler? = null
-            private set
-
-        lateinit var assetDir : File
-            private set
-
-        fun initShellHandler() : Boolean {
-            return try {
-                shellHandlerInstance = ShellHandler()
-                true
-            } catch (e: ShellHandler.ShellCommandFailedException) {
-                false
-            }
-        }
 
         var activityRef : WeakReference<MainActivityX> = WeakReference(null)
         var activity : MainActivityX?
@@ -97,23 +73,23 @@ class MainActivityX : BaseActivity() {
         var appsSuspendedChecked = false
 
         var statusNotificationId = 0
-        //TODO cleanup var cancelAllWork = false
 
         fun showRunningStatus(manager: WorkManager? = null, work: MutableList<WorkInfo>? = null) {
-            var running = 0
-            var queued = 0
-            var shortText = ""
-            var bigText = ""
-
             if(manager == null || work == null)
                 return
 
             if (statusNotificationId == 0)
                 statusNotificationId = System.currentTimeMillis().toInt()
+
+            var running = 0
+            var queued = 0
+            var shortText = ""
+            var bigText = ""
+
             activity?.let { activity ->
-                val appContext = activity.applicationContext
-                val workManager = manager ?: WorkManager.getInstance(appContext)
-                val workInfos = work ?: workManager.getWorkInfosByTag(
+                val appContext = OABX.context
+                val workManager = OABX.work.manager
+                val workInfos = workManager.getWorkInfosByTag(
                     AppActionWork::class.qualifiedName!!
                 ).get()
                 var workCount = 0
@@ -121,8 +97,7 @@ class MainActivityX : BaseActivity() {
                 var workBlocked = 0
                 var workRunning = 0
                 var workFinished = 0
-                var workSecondAttempts = 0
-                var workLastAttempts = 0
+                var workRetries = 0
                 var succeeded = 0
                 var failed = 0
                 var canceled = 0
@@ -132,10 +107,7 @@ class MainActivityX : BaseActivity() {
                     val operation = progress.getString("operation")
                     workCount++
                     if (workInfo.runAttemptCount > 1) {
-                        if (workInfo.runAttemptCount == AppActionWork.WORK_MAX_ATTEMPTS)
-                            workLastAttempts++
-                        else
-                            workSecondAttempts++
+                        workRetries++
                     }
 
                     when(workInfo.state) {
@@ -176,7 +148,12 @@ class MainActivityX : BaseActivity() {
                 }
 
                 val processed = succeeded + failed
-                val title = "$processed/$workCount = ✔$succeeded/❌$failed (🔄$workSecondAttempts...$workLastAttempts) ⏸$workBlocked ⏹$canceled - $queued🚀$running"
+
+                var title = "+$succeeded -$failed / $workCount"
+                    if(running+queued > 0)
+                        title += "  🏃$running 👭${queued}"
+                    else
+                        title += "  ${OABX.context.getString(R.string.finished)}"
 
                 if(workCount>0) {
                     val notificationManager = NotificationManagerCompat.from(appContext)
@@ -236,46 +213,6 @@ class MainActivityX : BaseActivity() {
                 }
             }
         }
-
-        fun initWorkManager() {
-            val workManager = workManager()
-            workManager.pruneWork()
-            workManager.getWorkInfosByTagLiveData(
-                AppActionWork::class.qualifiedName!!
-            ).observeForever {
-                showRunningStatus(workManager, it)
-            }
-        }
-
-        fun workContext() = activity!!.applicationContext
-        fun workManager() = WorkManager.getInstance(workContext())
-
-        fun startWork() {
-            workManager().pruneWork()
-            //MainActivityX.cancelAllWork = false
-            //MainActivityX.showRunningStatus()
-        }
-
-        private fun cancelWork() {
-            activity?.showToast("cancel work queue")
-            //cancelAllWork = true
-            AppActionWork::class.qualifiedName?.let {
-                workManager().cancelAllWorkByTag(it)
-            }
-            activity?.refreshView()
-            //showRunningStatus()
-        }
-
-        class WorkReceiver : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent?) {
-                when(intent?.action) {
-                        "WORK_CANCEL" -> cancelWork()
-                        "WORK_CANCEL_SERVICE" -> cancelWork()
-                }
-            }
-        }
-
-        val actionReceiver = WorkReceiver()
     }
 
     private lateinit var prefs: SharedPreferences
@@ -295,8 +232,7 @@ class MainActivityX : BaseActivity() {
         setCustomTheme()
         super.onCreate(savedInstanceState)
 
-        if(PreferenceManager.getDefaultSharedPreferences(context)
-                .getBoolean("catchUncaughtException", true)) {
+        if(OABX.prefFlag("catchUncaughtException", true)) {
             Thread.setDefaultUncaughtExceptionHandler { thread, e ->
                 try {
                     LogsHandler.unhandledException(e)
@@ -346,9 +282,6 @@ class MainActivityX : BaseActivity() {
         viewModel.refreshNow.observe(this, {
             if (it) refreshView()
         })
-        initAssetFiles()
-        initShell()
-        initWorkManager()
         runOnUiThread { showEncryptionDialog() }
         setContentView(binding.root)
     }
@@ -361,12 +294,10 @@ class MainActivityX : BaseActivity() {
         super.onStart()
         setupOnClicks()
         setupNavigation()
-        workContext().registerReceiver(actionReceiver, IntentFilter())
     }
 
     override fun onStop() {
         super.onStop()
-        workContext().unregisterReceiver(actionReceiver)
     }
 
     override fun onResume() {
@@ -397,7 +328,7 @@ class MainActivityX : BaseActivity() {
         if (intent != null) {
             val action = intent.action
             when (action) {
-                //"WORK_CANCEL" -> cancelWorkQueue(this)
+                //"WORK_CANCEL" -> OABX.workHandler.cancelWork()
             }
         }
         super.onNewIntent(intent)
@@ -444,53 +375,6 @@ class MainActivityX : BaseActivity() {
                     )
                 }
                 .show()
-        }
-    }
-
-    fun initAssetFiles() {
-
-        // copy scripts to file storage
-        activity?.let { context ->
-            assetDir = File(context.filesDir, ASSETS_SUBDIR)
-            assetDir.mkdirs()
-            // don't copy if the files exist and are from the current app version
-            val appVersion = BuildConfig.VERSION_NAME
-            val version = try {
-                File(assetDir, VERSION_FILE).readText()
-            } catch (e: Throwable) {
-                ""
-            }
-            if (version != appVersion) {
-                try {
-                    // cleans assetDir and copiers asset files
-                    context.assets.copyRecursively("files", assetDir)
-                    // additional generated files
-                    File(assetDir, ShellHandler.EXCLUDE_FILE)
-                        .writeText(
-                            (BaseAppAction.DATA_EXCLUDED_DIRS.map { "./$it" } + BaseAppAction.DATA_EXCLUDED_FILES)
-                                .map { it + "\n" }.joinToString("")
-                        )
-                    File(assetDir, ShellHandler.EXCLUDE_CACHE_FILE)
-                        .writeText(
-                            BaseAppAction.DATA_EXCLUDED_CACHE_DIRS.map { "./$it" }
-                                .map { it + "\n" }.joinToString("")
-                        )
-                    // validate with version file if completed
-                    File(assetDir, VERSION_FILE).writeText(appVersion)
-                } catch (e: Throwable) {
-                    Timber.w("cannot copy scripts to ${assetDir}")
-                }
-            }
-        }
-    }
-
-    private fun initShell() {
-        // Initialize the ShellHandler for further root checks
-        if (!initShellHandler()) {
-            showWarning(
-                MainActivityX::class.java.simpleName,
-                getString(R.string.shell_initproblem)
-            ) { _: DialogInterface?, _: Int -> finishAffinity() }
         }
     }
 
@@ -545,26 +429,5 @@ class MainActivityX : BaseActivity() {
             activity?.dismissSnackBar()
         }
     }
-}
 
-
-fun AssetManager.copyRecursively(assetPath: String, targetFile: File) {
-    list(assetPath)?.let { list ->
-        if (list.isEmpty()) { // assetPath is file
-            open(assetPath).use { input ->
-                FileOutputStream(targetFile.absolutePath).use { output ->
-                    input.copyTo(output)
-                    output.flush()
-                }
-            }
-
-        } else { // assetPath is folder
-            targetFile.deleteRecursively()
-            targetFile.mkdir()
-
-            list.forEach {
-                copyRecursively("$assetPath/$it", File(targetFile, it))
-            }
-        }
-    }
 }

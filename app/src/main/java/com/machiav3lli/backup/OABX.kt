@@ -18,15 +18,58 @@
 package com.machiav3lli.backup
 
 import android.app.Application
+import android.content.Context
 import android.util.LruCache
+import androidx.preference.PreferenceManager
+import com.machiav3lli.backup.handler.ShellHandler
+import com.machiav3lli.backup.handler.WorkHandler
 import com.machiav3lli.backup.items.AppInfo
 import timber.log.Timber
+import java.lang.ref.WeakReference
 
 class OABX : Application() {
+
     var cache: LruCache<String, MutableList<AppInfo>> = LruCache(4000)
+
+    var work: WorkHandler? = null
+
+    companion object {
+        var appRef: WeakReference<OABX> = WeakReference(null)
+        val app: OABX           get() = appRef.get()!!
+
+        var shellHandlerInstance: ShellHandler? = null
+            private set
+
+        fun initShellHandler() : Boolean {
+            return try {
+                shellHandlerInstance = ShellHandler()
+                true
+            } catch (e: ShellHandler.ShellCommandFailedException) {
+                false
+            }
+        }
+
+        val context: Context    get() = app.applicationContext
+        val work: WorkHandler   get() = app.work!!
+
+        fun prefFlag(name: String, default: Boolean) =
+                        PreferenceManager.getDefaultSharedPreferences(context).getBoolean(name, default)
+
+        fun prefInt(name: String, default: Int) =
+                        PreferenceManager.getDefaultSharedPreferences(context).getInt(name, default)
+    }
 
     override fun onCreate() {
         super.onCreate()
+        appRef = WeakReference(this)
         Timber.plant(Timber.DebugTree())
+        initShellHandler()
+        work = WorkHandler(context)
+    }
+
+    override fun onTerminate() {
+        work = work?.release()
+        appRef = WeakReference(null)
+        super.onTerminate()
     }
 }

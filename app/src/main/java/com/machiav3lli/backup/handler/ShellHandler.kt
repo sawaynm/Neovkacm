@@ -19,7 +19,7 @@ package com.machiav3lli.backup.handler
 
 import android.os.Environment.DIRECTORY_DOCUMENTS
 import com.machiav3lli.backup.BuildConfig
-import com.machiav3lli.backup.activities.MainActivityX
+import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.activities.MainActivityX.Companion.activity
 import com.machiav3lli.backup.handler.ShellHandler.FileInfo.FileType
 import com.machiav3lli.backup.utils.BUFFER_SIZE
@@ -36,8 +36,9 @@ import java.util.regex.Pattern
 
 class ShellHandler {
 
+    lateinit var assets: AssetHandler
+
     init {
-        // TODO: hg42: duplicate to SplashActivity?
         Shell.enableVerboseLogging = BuildConfig.DEBUG
         Shell.setDefaultBuilder(
             Shell.Builder.create()
@@ -45,6 +46,29 @@ class ShellHandler {
                 .setFlags(Shell.FLAG_MOUNT_MASTER)
                 .setTimeout(20)
         )
+
+        val names = UTILBOX_NAMES
+        names.any {
+            try {
+                setUtilBoxPath(it)
+                true
+            } catch (e: UtilboxNotAvailableException) {
+                Timber.d("Tried utilbox name '${it}'. Not available.")
+                false
+            }
+        }
+        if (utilBoxQ.isEmpty()) {
+            Timber.d("No more options for utilbox. Bailing out.")
+            throw UtilboxNotAvailableException(names.joinToString(", "), null)
+        }
+
+        assets = AssetHandler(OABX.context)
+        scriptDir = assets.directory
+        scriptUserDir = File(
+            activity?.getExternalFilesDir(DIRECTORY_DOCUMENTS),
+            SCRIPTS_SUBDIR
+        )
+        scriptUserDir?.mkdirs()
     }
 
     @Throws(ShellCommandFailedException::class)
@@ -96,32 +120,29 @@ class ShellHandler {
         // use -dlZ instead of -dnZ, because -nZ was found (by Kostas!) with an error (with no space between group and context)
         // apparently uid/gid is less tested than names
         var shellResult: Shell.Result? = null
+        val command = "$utilBoxQ ls -bdAlZ ${quote(filepath)}"
         try {
-            val command = "$utilBoxQ ls -bdAlZ ${quote(filepath)}"
             shellResult = runAsRoot(command)
             return shellResult.out[0].split(" ", limit = 6).slice(2..4).toTypedArray()
         } catch (e: Throwable) {
-            throw UnexpectedCommandResult("'\$command' failed", shellResult)
+            throw UnexpectedCommandResult("'$command' failed", shellResult)
         }
     }
 
     @Throws(UtilboxNotAvailableException::class)
     fun setUtilBoxPath(utilBoxName: String) {
-        var shellResult = runAsRoot("which $utilBoxName")
-        if (shellResult.out.isNotEmpty()) {
-            utilBoxPath = shellResult.out.joinToString("")
-            if (utilBoxPath.isNotEmpty()) {
-                utilBoxQ = quote(utilBoxPath)
-                shellResult = runAsRoot("$utilBoxQ --version")
-                if (shellResult.out.isNotEmpty()) {
-                    val utilBoxVersion = shellResult.out.joinToString("")
-                    Timber.i("Using Utilbox $utilBoxName : $utilBoxQ : $utilBoxVersion")
-                }
-                return
+        utilBoxQ = quote(utilBoxName)
+        var shellResult = runAsRoot("$utilBoxQ --version")
+        if (shellResult.isSuccess) {
+            if (shellResult.out.isNotEmpty()) {
+                utilBoxVersion = shellResult.out.joinToString("")
+                Timber.i("Using Utilbox $utilBoxName : $utilBoxQ : $utilBoxVersion")
+            } else {
+                Timber.i("Using Utilbox $utilBoxName : $utilBoxQ : no version")
             }
+            return
         }
         // not found => try bare executables (no utilbox prefixed)
-        utilBoxPath = ""
         utilBoxQ = ""
     }
 
@@ -334,9 +355,9 @@ class ShellHandler {
 
     companion object {
 
-        var utilBoxPath = ""
-            private set
         var utilBoxQ = ""
+            private set
+        var utilBoxVersion = ""
             private set
         lateinit var scriptDir : File
             private set
@@ -489,29 +510,5 @@ class ShellHandler {
                 found = File(scriptDir, assetFileName)
             return found
         }
-    }
-
-    init {
-        val names = UTILBOX_NAMES
-        names.any {
-            try {
-                setUtilBoxPath(it)
-                true
-            } catch (e: UtilboxNotAvailableException) {
-                Timber.d("Tried utilbox name '${it}'. Not available.")
-                false
-            }
-        }
-        if (utilBoxQ.isEmpty()) {
-            Timber.d("No more options for utilbox. Bailing out.")
-            throw UtilboxNotAvailableException(names.joinToString(", "), null)
-        }
-
-        scriptDir = MainActivityX.assetDir
-        scriptUserDir = File(
-            activity?.getExternalFilesDir(DIRECTORY_DOCUMENTS),
-            SCRIPTS_SUBDIR
-        )
-        scriptUserDir?.mkdirs()
     }
 }

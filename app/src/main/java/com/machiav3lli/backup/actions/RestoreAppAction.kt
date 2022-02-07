@@ -18,10 +18,7 @@
 package com.machiav3lli.backup.actions
 
 import android.content.Context
-import androidx.preference.PreferenceManager
-import androidx.preference.PreferenceManager.getDefaultSharedPreferences
 import com.machiav3lli.backup.*
-import com.machiav3lli.backup.activities.MainActivityX
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.findAssetFile
@@ -335,7 +332,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
         var inputStream: InputStream = BufferedInputStream(archive.inputStream()!!)
         if (isEncrypted) {
             val password = context.getEncryptionPassword()
-            if (password.isNotEmpty() && context.isEncryptionEnabled()) {
+            if (iv != null && password.isNotEmpty() && context.isEncryptionEnabled()) {
                 Timber.d("Decryption enabled")
                 inputStream = inputStream.decryptStream(password, context.getCryptoSalt(), iv)
             }
@@ -365,18 +362,13 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             TarArchiveInputStream(
                 openArchiveFile(archive, compressed, isEncrypted, iv)
             ).use { archiveStream ->
-                if(getDefaultSharedPreferences(MainActivityX.activity)
-                        .getBoolean("restoreAvoidTemporaryCopy", true)
-                ) {
+                if(OABX.prefFlag("restoreAvoidTemporaryCopy", true)) {
                     // clear the data from the final directory
                     wipeDirectory(
                         targetPath,
                         DATA_EXCLUDED_DIRS
                     )
-                    archiveStream.suUnpackTo(
-                        RootFile(targetPath),
-                        getDefaultSharedPreferences(MainActivityX.activity)
-                            .getBoolean("strictHardLinks", false))
+                    archiveStream.suUnpackTo(RootFile(targetPath), OABX.prefFlag("strictHardLinks", false))
                 } else {
                     // Create a temporary directory in OABX's cache directory and uncompress the data into it
                     Files.createTempDirectory(cachePath?.toPath(), "restore_")?.let {
@@ -458,9 +450,10 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                     ) {
                         options += " --exclude " + quote(excludeCache)
                     }
+                    var suOptions = "--mount-master"
 
                     val cmd =
-                        "su --mount-master -c sh $qTarScript extract $utilBoxQ ${options} ${quote(targetDir)}"
+                        "su $suOptions -c sh $qTarScript extract $utilBoxQ ${options} ${quote(targetDir)}"
                     Timber.i("SHELL: $cmd")
 
                     val process = Runtime.getRuntime().exec(cmd)
@@ -519,9 +512,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
         iv: ByteArray?,
         cachePath: RootFile?
     ) {
-        if (PreferenceManager.getDefaultSharedPreferences(MainActivityX.activity)
-                .getBoolean("restoreTarCmd", true)
-        ) {
+        if (OABX.prefFlag("restoreTarCmd", true)) {
             return genericRestoreFromArchiveTarCmd(
                 dataType,
                 archive,
@@ -614,6 +605,10 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             throw RestoreFailedException(
                 "path '$extractTo' does not contain ${app.packageName}"
             )
+
+        if(!RootFile(extractTo).isDirectory)
+            throw RestoreFailedException("directory '$extractTo' does not exist")
+
         // retrieve the assigned uid and gid from the data directory Android created
         val uidgidcon = shell.suGetOwnerGroupContext(extractTo)
         genericRestoreFromArchive(
@@ -658,6 +653,10 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             throw RestoreFailedException(
                 "path '$extractTo' does not contain ${app.packageName}"
             )
+
+        if(!RootFile(extractTo).isDirectory)
+            throw RestoreFailedException("directory '$extractTo' does not exist")
+
         // retrieve the assigned uid and gid from the data directory Android created
         val uidgidcon = shell.suGetOwnerGroupContext(extractTo)
         genericRestoreFromArchive(
@@ -836,7 +835,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
         val sleepTimeMs = 1000L
 
         // delay before first try
-        val delayMs = context.getDefaultSharedPreferences().getInt("delayBeforeRefreshAppInfo", 0) * 1000L
+        val delayMs = OABX.prefInt("delayBeforeRefreshAppInfo", 0) * 1000L
         var timeWaitedMs = 0L
         do {
             Thread.sleep(sleepTimeMs)
@@ -845,7 +844,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
 
         // try multiple times to get valid paths from PackageManager
         // maxWaitMs is cumulated sleep time between tries
-        val maxWaitMs = context.getDefaultSharedPreferences().getInt("refreshAppInfoTimeout", 30) * 1000L
+        val maxWaitMs = OABX.prefInt("refreshAppInfoTimeout", 30) * 1000L
         timeWaitedMs = 0L
         var attemptNo = 0
         do {

@@ -19,9 +19,7 @@ package com.machiav3lli.backup.actions
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.preference.PreferenceManager
 import com.machiav3lli.backup.*
-import com.machiav3lli.backup.activities.MainActivityX
 import com.machiav3lli.backup.handler.BackupBuilder
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
@@ -213,7 +211,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
         iv: ByteArray?
     ) {
         Timber.i("Creating $what backup via API")
-        val backupFilename = getBackupArchiveFilename(what, compress, context.isEncryptionEnabled())
+        val backupFilename = getBackupArchiveFilename(what, compress, iv != null && context.isEncryptionEnabled())
         val backupFile = backupInstanceDir.createFile("application/octet-stream", backupFilename)
 
         val password = context.getEncryptionPassword()
@@ -222,7 +220,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
 
         var outStream: OutputStream = backupFile.outputStream()!!
 
-        if (password.isNotEmpty() && context.isEncryptionEnabled()) {
+        if (iv != null && password.isNotEmpty() && context.isEncryptionEnabled()) {
             outStream = outStream.encryptStream(password, context.getCryptoSalt(), iv)
         }
         if(compress) {
@@ -269,16 +267,16 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             apksToBackup.size,
             apksToBackup.joinToString(" ") { s: String -> RootFile(s).name }
         )
-        try {
-            for (apk in apksToBackup) {
+        for (apk in apksToBackup) {
+            try {
                 suCopyFileToDocument(apk, backupInstanceDir)
+            } catch (e: IOException) {
+                Timber.e("$app: Could not backup apk $apk: $e")
+                throw BackupFailedException("Could not backup apk $apk", e)
+            } catch (e: Throwable) {
+                LogsHandler.unhandledException(e, app)
+                throw BackupFailedException("Could not backup apk $apk", e)
             }
-        } catch (e: IOException) {
-            Timber.e("$app: Backup APKs failed: $e")
-            throw BackupFailedException("Could not backup apk", e)
-        } catch (e: Throwable) {
-            LogsHandler.unhandledException(e, app)
-            throw BackupFailedException("Could not backup apk", e)
         }
     }
 
@@ -396,7 +394,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
         if(!ShellUtils.fastCmdResult("test -d ${quote(sourcePath)}"))
             return false
         Timber.i("Creating $dataType backup via tar")
-        val backupFilename = getBackupArchiveFilename(dataType, compress, context.isEncryptionEnabled())
+        val backupFilename = getBackupArchiveFilename(dataType, compress, iv != null && context.isEncryptionEnabled())
         val backupFile = backupInstanceDir.createFile("application/octet-stream", backupFilename)
 
         val password = context.getEncryptionPassword()
@@ -405,7 +403,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
 
         var outStream: OutputStream = backupFile.outputStream()!!
 
-        if (password.isNotEmpty() && context.isEncryptionEnabled()) {
+        if (iv != null && password.isNotEmpty() && context.isEncryptionEnabled()) {
             outStream = outStream.encryptStream(password, context.getCryptoSalt(), iv)
         }
         if(compress) {
@@ -426,8 +424,9 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             if (context.getDefaultSharedPreferences().getBoolean(PREFS_EXCLUDECACHE, true)) {
                 options += " --exclude ${quote(excludeCache)}"
             }
+            var suOptions = "--mount-master"
 
-            val cmd = "su --mount-master -c sh ${quote(tarScript)} create $utilBoxQ ${options} ${quote(sourcePath)}"
+            val cmd = "su $suOptions -c sh ${quote(tarScript)} create $utilBoxQ ${options} ${quote(sourcePath)}"
             Timber.i("SHELL: $cmd")
 
             val process = Runtime.getRuntime().exec(cmd)
@@ -483,9 +482,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
         compress: Boolean,
         iv: ByteArray?
     ): Boolean {
-            if (PreferenceManager.getDefaultSharedPreferences(MainActivityX.activity)
-                    .getBoolean("backupTarCmd", true)
-            ) {
+            if (OABX.prefFlag("backupTarCmd", true)) {
                 return genericBackupDataTarCmd(
                     dataType,
                     backupInstanceDir,

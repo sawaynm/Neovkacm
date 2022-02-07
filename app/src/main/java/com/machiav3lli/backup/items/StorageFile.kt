@@ -4,12 +4,11 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.DocumentsContract
-import androidx.preference.PreferenceManager
+import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.handler.LogsHandler
+import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.handler.ShellHandler
-import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
 import com.machiav3lli.backup.utils.*
-import com.topjohnwu.superuser.ShellUtils
 import timber.log.Timber
 import java.io.File
 import java.io.FileNotFoundException
@@ -31,9 +30,7 @@ open class StorageFile {
         this.parent = parent
         this.context = context
         this.uri = uri
-        if (PreferenceManager.getDefaultSharedPreferences(context)
-                .getBoolean("shadowRootFileForSAF", true)
-        ) {
+        if (OABX.prefFlag("shadowRootFileForSAF", true)) {
             fun isValidPath(file: RootFile?): Boolean = file?.let { file.exists() && file.canRead() && file.canWrite() } ?: false
             parent ?: run {
                 file ?: run {
@@ -49,14 +46,20 @@ open class StorageFile {
                                 } else
                                     throw Exception("cannot use RootFile shadow at $last")
                             } else {
-                                val (storage, subpath) = last.split(":")
+                                var (storage, subpath) = last.split(":")
+                                val user = ShellCommands.currentUser
+                                if(storage == "primary")
+                                    storage = "emulated/$user"
+                                // NOTE: lockups occur in emulator (or A12?) for certain paths
+                                // e.g. /storage/emulated/$user
                                 val possiblePaths = listOf(
-                                    "/storage/$storage/$subpath",
+                                    "/mnt/pass_through/$user/$storage/$subpath",
+                                    //"/storage/$storage/$subpath",             // lockups! primary links to /storage/emulated/$user
                                     "/mnt/media_rw/$storage/$subpath",
                                     "/mnt/runtime/full/$storage/$subpath",
                                     "/mnt/runtime/default/$storage/$subpath",
-                                    "/storage/self/$storage/$subpath",
-                                    "/mnt/runtime/default/self/$storage/$subpath"
+                                    //"/storage/self/$storage/$subpath",            // lockups! ommit self, because self/primary links to lockup
+                                    //"/mnt/runtime/default/self/$storage/$subpath" // lockups! ommit self, because self/primary links to lockup
                                     // these would need user number
                                     //"/mnt/user/$user/$storage/$subpath",
                                     //"/mnt/user/$user/self/$storage/$subpath",
@@ -65,7 +68,7 @@ open class StorageFile {
                                 var checkFile: RootFile? = null
                                 for(path in possiblePaths) {
                                     checkFile = RootFile(path)
-                                    if (isValidPath(checkFile)) {
+                                    if (isValidPath(checkFile)) {   //TODO hg42 check with timeout in case of lockups
                                         Timber.i("found storage RootFile shadow at $checkFile")
                                         file = checkFile
                                         break

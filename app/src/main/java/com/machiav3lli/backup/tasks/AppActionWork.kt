@@ -21,6 +21,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.work.*
 import com.machiav3lli.backup.MODE_UNSET
+import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.activities.MainActivityX
 import com.machiav3lli.backup.handler.BackupRestoreHelper
 import com.machiav3lli.backup.handler.LogsHandler
@@ -35,6 +36,7 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
 
     private var notificationId: Int = 123454321
     private var backupBoolean = true
+    private var failures = 0
 
     init {
         setOperation("...")
@@ -77,13 +79,11 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
         val packageLabel = appInfo?.packageLabel
             ?: "NONE"
         try {
-            if(isStopped) { //TODO cleanup  || MainActivityX.cancelAllWork) {
-                setOperation("DEL")
-            } else {
+            if(!isStopped) {
 
                 appInfo?.let { ai ->
                     try {
-                        MainActivityX.shellHandlerInstance?.let { shellHandler ->
+                        OABX.shellHandlerInstance?.let { shellHandler ->
                             result = when {
                                 backupBoolean -> {
                                     BackupRestoreHelper.backup(
@@ -125,7 +125,8 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
         }
         val error = result?.message
         val succeeded = result?.succeeded ?: false
-        if(succeeded)
+        if(succeeded) {
+            setOperation("OK")
             return Result.success(
                 workDataOf(
                     "backupBoolean" to backupBoolean,
@@ -133,13 +134,16 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                     "operation" to "OK",
                     "error" to error,
                     "succeeded" to succeeded,
-                    "packageLabel" to packageLabel
+                    "packageLabel" to packageLabel,
+                    "failures" to failures
                 )
             )
-        else {
-            if(runAttemptCount <= WORK_MAX_ATTEMPTS) //TODO hg42 use setting?
+        } else {
+            failures++
+            if(failures <= OABX.prefInt("maxRetriesPerPackage", 3))
                 return Result.retry()
-            else
+            else {
+                setOperation("FAIL")
                 return Result.failure(
                     workDataOf(
                         "backupBoolean" to backupBoolean,
@@ -147,9 +151,11 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                         "operation" to "ERR",
                         "error" to error,
                         "succeeded" to succeeded,
-                        "packageLabel" to packageLabel
+                        "packageLabel" to packageLabel,
+                        "failures" to failures
                     )
                 )
+            }
         }
     }
 
@@ -159,9 +165,9 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
         setProgressAsync(workDataOf(
             "packageName" to packageName,
             "backupBoolean" to backupBoolean,
-            "operation" to operation
+            "operation" to operation,
+            "failures" to failures
         ))
-        //TODO cleanup MainActivityX.showRunningStatus()
     }
 
     /*
@@ -208,7 +214,6 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
 
     companion object {
         private val CHANNEL_ID = AppActionWork::class.java.name
-        val WORK_MAX_ATTEMPTS = 3
 
         fun Request(
             packageName: String,
