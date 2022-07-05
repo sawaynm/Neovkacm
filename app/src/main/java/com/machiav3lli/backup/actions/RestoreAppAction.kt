@@ -658,18 +658,21 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
     ) {
         try {
             val (uid, gid, con) = uidgidcon
+            val gidCache = "${gid}_cache"
             Timber.i("Getting user/group info and apply it recursively on $targetPath")
             // get the contents. lib for example must be owned by root
             //TODO hg42 I think, lib is always a link
             //TODO hg42 directories we exclude would keep their uidgidcon from before
-            //TODO hg42 this doesn't seem to be correct, unless the apk instlal would manage updating uidgidcon
+            //TODO hg42 this doesn't seem to be correct, unless the apk install would manage updating uidgidcon
             val dataContents: MutableList<String> =
                 mutableListOf(*shell.suGetDirectoryContents(RootFile(targetPath)))
             // Don't exclude any files from chown, as this may cause SELINUX issues (lost of data on restart)
             // dataContents.removeAll(DATA_EXCLUDED_BASENAMES)
-            // dataContents.removeAll(DATA_EXCLUDED_CACHE_DIRS)
+            dataContents.removeAll(DATA_EXCLUDED_CACHE_DIRS)    // these are not excluded but processed differently! -> cacheTargets
+
             // calculate a list what must be updated inside the directory
             val chownTargets = dataContents.map { s -> RootFile(targetPath, s).absolutePath }
+            val cacheTargets = DATA_EXCLUDED_CACHE_DIRS.map { s -> RootFile(targetPath, s).absolutePath }
             Timber.d("Changing owner and group of '$targetPath' to $uid:$gid and selinux context to $con")
             var command =
                 "$utilBoxQ chown $uid:$gid ${
@@ -678,6 +681,10 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             if (chownTargets.isNotEmpty())
                 command += " ; $utilBoxQ chown -R $uid:$gid ${
                     quoteMultiple(chownTargets)
+                }"
+            if (cacheTargets.isNotEmpty())
+                command += " ; $utilBoxQ chown -R $uid:$gidCache ${
+                    quoteMultiple(cacheTargets)
                 }"
             command += if (con == "?") //TODO hg42: when does it happen?
                 " ; restorecon -RF -v ${quote(targetPath)}"
