@@ -1,0 +1,16 @@
+{
+  "name": "Android Development Container",
+  "image": "mcr.microsoft.com/vscode/devcontainers/java:0-8",
+  "runArgs": ["--init"],
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "postCreateCommand": "apt-get update && apt-get install -y gradle",
+  "extensions": [
+    "ms-azuretools.vscode-docker",
+    "vscjava.vscode-java-pack"
+  ]
+}
